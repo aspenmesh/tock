@@ -14,6 +14,7 @@ type (
 		NewTicker(duration time.Duration) *Ticker
 	}
 
+	// Timer is created from NewTimer() and sends to C when elapsed
 	Timer struct {
 		C <-chan time.Time
 
@@ -25,6 +26,7 @@ type (
 		when time.Time
 	}
 
+	// Ticker is created from NewTicker() and sends to C every duration interval
 	Ticker struct {
 		C <-chan time.Time
 

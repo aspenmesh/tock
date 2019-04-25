@@ -49,6 +49,7 @@ func (t *Timer) Reset(d time.Duration) bool {
 	panic("Not implemented")
 }
 
+// Stop stops a timer from firing
 func (t *Timer) Stop() bool {
 	if t.real != nil {
 		return t.real.Stop()
@@ -56,6 +57,7 @@ func (t *Timer) Stop() bool {
 	return stopMockTimer(t)
 }
 
+// Stop stops a ticker from firing
 func (t *Ticker) Stop() {
 	if t.real != nil {
 		t.real.Stop()

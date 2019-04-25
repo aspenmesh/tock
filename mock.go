@@ -7,6 +7,7 @@ import (
 	"time"
 )
 
+// MockClock is a Clock where time only advances under your control
 type MockClock interface {
 	Clock
 	Advance(duration time.Duration)
@@ -28,12 +29,14 @@ type mockClock struct {
 
 var _ MockClock = &mockClock{}
 
+// NewMock creates a new mock Clock, starting at zero time
 func NewMock() *mockClock {
 	return &mockClock{
 		now: time.Time{},
 	}
 }
 
+// Now is the current time, starting at zero time and controlled by Advance
 func (c *mockClock) Now() time.Time {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
@@ -108,6 +111,7 @@ func (c *mockClock) removeSleeper(s interface{}) bool {
 	return true
 }
 
+// NewTimer creates a new Timer that will send to C after duration
 func (c *mockClock) NewTimer(duration time.Duration) *Timer {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
@@ -124,6 +128,7 @@ func (c *mockClock) NewTimer(duration time.Duration) *Timer {
 	return t
 }
 
+// NewTicker creates a new Ticker that will send to C every duration interval
 func (c *mockClock) NewTicker(duration time.Duration) *Ticker {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
@@ -141,6 +146,7 @@ func (c *mockClock) NewTicker(duration time.Duration) *Ticker {
 	return t
 }
 
+// Advance simulated time by duration, firing any registerd Timers, etc.
 func (c *mockClock) Advance(duration time.Duration) {
 	// Take advanceMutex and then mutex.  We will drop/retake mutex
 	// as we fire each timer, since some timers may register new timers
@@ -219,6 +225,7 @@ func stopMockTicker(t *Ticker) {
 	c.removeSleeper(t)
 }
 
+// BlockUntil will not return until the number of pending Timers etc. is exactly n
 func (c *mockClock) BlockUntil(n int) {
 	changed := make(chan int)
 
@@ -245,10 +252,14 @@ func (c *mockClock) BlockUntil(n int) {
 	}
 }
 
+// A channel that receives after duration
+// Equivalent to `c.NewTimer(duration).C`
 func (c *mockClock) After(duration time.Duration) <-chan time.Time {
 	return c.NewTimer(duration).C
 }
 
+// Blocks until duration has elapsed, returns immediately if duration <= 0
+// Equivalent to `<-c.NewTimer(duration).C`
 func (c *mockClock) Sleep(duration time.Duration) {
 	if duration <= 0 {
 		return
@@ -256,10 +267,12 @@ func (c *mockClock) Sleep(duration time.Duration) {
 	<-c.After(duration)
 }
 
+// Elasped since t relative to mock time, equivalent to `c.Now().Sub(t)`
 func (c *mockClock) Since(t time.Time) time.Duration {
 	return c.now.Sub(t)
 }
 
+// Time until t relative to mock time, equivalent to `t.Sub(c.Now())`
 func (c *mockClock) Until(t time.Time) time.Duration {
 	return t.Sub(c.now)
 }
