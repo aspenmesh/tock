@@ -87,20 +87,16 @@ func (c *mockClock) insertSleeper(s interface{}) {
 
 // must be holding mutex when calling
 func (c *mockClock) removeSleeper(s interface{}) bool {
-	t := sleeperWhen(s)
 
-	i := sort.Search(len(c.sleepers), func(i int) bool {
-		return !t.Before(sleeperWhen(c.sleepers[i]))
-	})
-	// i is the first index where t >= c.sleepers[i], but may not be our
-	// sleeper (e.g. many sleepers are scheduled at the same instant).
+	i := 0
 	for ; i < len(c.sleepers); i++ {
 		if s == c.sleepers[i] {
 			break
 		}
 	}
 	if i == len(c.sleepers) {
-		// couldn't find the timer in this list
+		// Couldn't find the timer in this list.  This happens if the timer or
+		// ticker fired via Advance(), and is calling Stop()
 		return false
 	}
 
@@ -183,13 +179,13 @@ func (c *mockClock) Advance(duration time.Duration) {
 		switch s := head.(type) {
 		case *Ticker:
 			// Requeue ticker
-			if s.mock == c {
+			if !s.stopped {
 				s.when = c.now.Add(s.period)
 				c.insertSleeper(s)
 			}
 		case *Timer:
 			// Discard timer, and notify that sleepers changed
-			s.mock = nil
+			s.stopped = true
 			for _, sc := range c.sleepersChanged {
 				sc <- len(c.sleepers)
 			}
@@ -200,28 +196,24 @@ func (c *mockClock) Advance(duration time.Duration) {
 func stopMockTimer(t *Timer) bool {
 	c := t.mock
 
-	if c == nil {
-		// Timer already stopped
-		return false
-	}
-	t.mock = nil
-
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
+	if t.stopped {
+		return false
+	}
+	t.stopped = true
 	return c.removeSleeper(t)
 }
 
 func stopMockTicker(t *Ticker) {
 	c := t.mock
 
-	if c == nil {
-		// Ticker already stopped
-		return
-	}
-	t.mock = nil
-
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
+	if t.stopped {
+		return
+	}
+	t.stopped = true
 	c.removeSleeper(t)
 }
 

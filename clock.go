@@ -22,8 +22,9 @@ type (
 		mock *mockClock
 		real *time.Timer
 
-		outC chan<- time.Time
-		when time.Time
+		outC    chan<- time.Time
+		when    time.Time
+		stopped bool
 	}
 
 	// Ticker is created from NewTicker() and sends to C every duration interval
@@ -34,8 +35,9 @@ type (
 		mock *mockClock
 		real *time.Ticker
 
-		outC   chan<- time.Time
-		when   time.Time
-		period time.Duration
+		outC    chan<- time.Time
+		when    time.Time
+		period  time.Duration
+		stopped bool
 	}
 )
