@@ -53,8 +53,7 @@ func (t *Timer) Stop() bool {
 	if t.real != nil {
 		return t.real.Stop()
 	}
-
-	panic("Not implemented")
+	return stopMockTimer(t)
 }
 
 func (t *Ticker) Stop() {
@@ -62,6 +61,5 @@ func (t *Ticker) Stop() {
 		t.real.Stop()
 		return
 	}
-
-	panic("Not implemented")
+	stopMockTicker(t)
 }

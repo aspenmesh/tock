@@ -20,6 +20,9 @@ type (
 		// one of mock/real is set
 		mock *mockClock
 		real *time.Timer
+
+		outC chan<- time.Time
+		when time.Time
 	}
 
 	Ticker struct {
@@ -28,5 +31,9 @@ type (
 		// one of mock/real is set
 		mock *mockClock
 		real *time.Ticker
+
+		outC   chan<- time.Time
+		when   time.Time
+		period time.Duration
 	}
 )
