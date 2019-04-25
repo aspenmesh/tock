@@ -128,3 +128,74 @@ func TestBlockUntil(t *testing.T) {
 	t2.Stop()
 	wg.Wait()
 }
+
+func TestAfter(t *testing.T) {
+	c := NewMock()
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		<-c.After(1 * time.Second)
+		c.BlockUntil(0)
+		wg.Done()
+	}()
+	c.BlockUntil(1)
+	c.Advance(1 * time.Second)
+	wg.Wait()
+	c.BlockUntil(0)
+}
+
+func TestSleep(t *testing.T) {
+	c := NewMock()
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		c.Sleep(1 * time.Second)
+		c.BlockUntil(0)
+		wg.Done()
+	}()
+	c.BlockUntil(1)
+	c.Advance(500 * time.Millisecond)
+	c.Advance(500 * time.Millisecond)
+	wg.Wait()
+	c.BlockUntil(0)
+}
+
+func TestSince(t *testing.T) {
+	c := NewMock()
+	d := time.Date(1, time.January, 1, 0, 0, 5, 0, time.UTC)
+	s := c.Since(d)
+	if s != -5*time.Second {
+		t.Errorf("Expected -5 seconds since zero time, got %v", s)
+	}
+	c.Advance(5 * time.Second)
+	s = c.Since(d)
+	if s != 0 {
+		t.Errorf("Expected 0 seconds since 5-second time, got %v", s)
+	}
+	c.Advance(24 * time.Hour)
+	s = c.Since(d)
+	if s != 24*time.Hour {
+		t.Errorf("Expected 24 hours since 24 hour time, got %v", s)
+	}
+}
+
+func TestUntil(t *testing.T) {
+	c := NewMock()
+	d := time.Date(1, time.January, 1, 0, 0, 5, 0, time.UTC)
+	u := c.Until(d)
+	if u != 5*time.Second {
+		t.Errorf("Expected 5 seconds until from zero time, got %v", u)
+	}
+	c.Advance(5 * time.Second)
+	u = c.Until(d)
+	if u != 0 {
+		t.Errorf("Expected 0 seconds until from 5-second time, got %v", u)
+	}
+	c.Advance(24 * time.Hour)
+	u = c.Until(d)
+	if u != -24*time.Hour {
+		t.Errorf("Expected -24 hours until from 24 hour time, got %v", u)
+	}
+}

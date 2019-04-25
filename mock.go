@@ -26,7 +26,7 @@ type mockClock struct {
 	sleepers []interface{}
 }
 
-//var _ MockClock = &mockClock{}
+var _ MockClock = &mockClock{}
 
 func NewMock() *mockClock {
 	return &mockClock{
@@ -243,4 +243,23 @@ func (c *mockClock) BlockUntil(n int) {
 			return
 		}
 	}
+}
+
+func (c *mockClock) After(duration time.Duration) <-chan time.Time {
+	return c.NewTimer(duration).C
+}
+
+func (c *mockClock) Sleep(duration time.Duration) {
+	if duration <= 0 {
+		return
+	}
+	<-c.After(duration)
+}
+
+func (c *mockClock) Since(t time.Time) time.Duration {
+	return c.now.Sub(t)
+}
+
+func (c *mockClock) Until(t time.Time) time.Duration {
+	return t.Sub(c.now)
 }
