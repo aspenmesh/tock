@@ -1,6 +1,6 @@
 # Tock
 
-[![godoc](https://godoc.org/github.com/andrewjjenkins/tock?status.svg)](http://godoc.org/github.com/andrewjjenkins/tock)
+[![godoc](https://godoc.org/github.com/aspenmesh/tock?status.svg)](http://godoc.org/github.com/aspenmesh/tock)
 
 a mock clock library for golang
 
@@ -23,7 +23,7 @@ replace with:
 
 ```go
 import (
-  "github.com/andrewjjenkins/tock"
+  "github.com/aspenmesh/tock"
 )
 
 var clock := tock.NewReal()
@@ -42,7 +42,7 @@ Next, in your unit tests, don't use `tock.NewReal()`, instead use `tock.NewMock(
 For example, in mySleepers.go:
 ```go
 import (
-  "github.com/andrewjjenkins/tock"
+  "github.com/aspenmesh/tock"
 )
 
 func mySleeper(clock tock.Clock) {
@@ -77,7 +77,7 @@ Using real wall time in unit tests is risky.  Fundamentally, a timer is
 guaranteed to fire no-earlier-than the time you ask for, but there is no
 guarantee that it won't fire later.  Potentially quite a bit later, especially
 when you are running unit tests on a busy CI system.  This problem seems to
-exaggerate right before a release, at least for me.
+exaggerate right before a release for some reason :-) .
 
 Also, you want to keep timers short when you are unit testing so that the unit
 tests run fast, but this increases the risk that timers don't fire exactly when
@@ -93,7 +93,7 @@ tests, and guarantees that timers fire exactly when you expect.
 # Why this library?
 
 There were a few existing mock clock libraries for golang.  There were a couple
-of things that were important to me:
+of things that were important to us:
 
 1. The channel that timers and tickers wait on is named `C`, directly in the
 struct, not accessible via interface (like `C()` or `Chan()`).  This matches
