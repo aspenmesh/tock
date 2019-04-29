@@ -47,15 +47,15 @@ func TestAdvance(t *testing.T) {
 	t2 := c.NewTicker(2 * time.Second)
 	t3 := c.NewTimer(1 * time.Second)
 
-	done := make(chan struct{})
-	defer close(done)
+	var wg sync.WaitGroup
+	wg.Add(1)
 	go func() {
 		// We will replace this with a real channel once t4 is registered.  This
 		// stub channel is just so that the select loop has something to wait on
 		// before t4 is set up.
 		t4Chan := make(<-chan time.Time)
 
-		for {
+		for firingsLeft := 5; firingsLeft > 0; firingsLeft-- {
 			select {
 			case <-t1.C:
 				firedMutex.Lock()
@@ -75,10 +75,9 @@ func TestAdvance(t *testing.T) {
 				firedMutex.Lock()
 				fired = append(fired, 4)
 				firedMutex.Unlock()
-			case <-done:
-				return
 			}
 		}
+		wg.Done()
 	}()
 
 	expectFired := func(stage string, nums ...int) {
@@ -95,17 +94,11 @@ func TestAdvance(t *testing.T) {
 		}
 	}
 
-	expectFired("start")
 	c.Advance(500 * time.Millisecond)
-	expectFired("before any")
 	c.Advance(500 * time.Millisecond)
-	expectFired("stage 1", 3)
-	c.Advance(1 * time.Second)
-	expectFired("stage 2", 3, 2, 4)
-	c.Advance(1 * time.Second)
-	expectFired("stage 3", 3, 2, 4, 1)
-	c.Advance(1 * time.Second)
-	expectFired("stage 4", 3, 2, 4, 1, 2)
+	c.Advance(3 * time.Second)
+	wg.Wait()
+	expectFired("done", 3, 2, 4, 1, 2)
 }
 
 func TestBlockUntil(t *testing.T) {
