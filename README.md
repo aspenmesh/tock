@@ -59,7 +59,7 @@ In the real implementation, call like:
 In the unit test, you can do:
 ```go
 func TestMySleeper(t *testing.T) {
-  c := tock.NewMock()
+  c := tock.NewMock(tock.MockOptions{})
   go func() {
     c.BlockUntil(1)
     c.Advance(1 * time.Second)
@@ -109,9 +109,12 @@ firing at exactly 0.5, 1.0, etc but some unit tests do)
 
 3. It is safe for a timer callback to re-register another timer.
 
-4. Timer notification yields using `runtime.Gosched()` and a short
-`time.Sleep()` to maximize the likelihood that downstream gofuncs,
-notifications, etc happen before moving on.
+4. If you set the `Yield` option, Timer notification yields using
+`runtime.Gosched()` and a short `time.Sleep()` to maximize the likelihood that
+downstream gofuncs, notifications, etc happen before moving on.  The most
+defensively written tests won't require this option - if you need to use it, it
+suggests you have a dependency on a timer callback function completing before
+some other action happens.
 
 # What's better?
 

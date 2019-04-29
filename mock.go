@@ -20,6 +20,7 @@ type mockClock struct {
 
 	now             time.Time
 	sleepersChanged []chan int
+	opts            MockOptions
 
 	// Sleepers are an empty interface because we want to preserve the struct
 	// with a channel C for the Ticker or Timer we return to users.
@@ -29,8 +30,13 @@ type mockClock struct {
 
 var _ MockClock = &mockClock{}
 
+type MockOptions struct {
+	// Yield to other goroutines after firing a Timer or Ticker.
+	Yield bool
+}
+
 // NewMock creates a new mock Clock, starting at zero time
-func NewMock() *mockClock {
+func NewMock(opts MockOptions) *mockClock {
 	return &mockClock{
 		now: time.Time{},
 	}
@@ -54,7 +60,7 @@ func sleeperWhen(sleeper interface{}) time.Time {
 	}
 }
 
-func notifySleeper(sleeper interface{}, now time.Time) {
+func notifySleeper(sleeper interface{}, now time.Time, yield bool) {
 	switch s := sleeper.(type) {
 	case *Timer:
 		s.outC <- now
@@ -65,8 +71,10 @@ func notifySleeper(sleeper interface{}, now time.Time) {
 	// Give timers an opportunity to run - helpful if we're in the middle of a
 	// long Advance.  Very well-written tests shouldn't rely on timers running
 	// immediately at the time they are scheduled and don't need this.
-	runtime.Gosched()
-	time.Sleep(100 * time.Microsecond)
+	if yield {
+		runtime.Gosched()
+		time.Sleep(100 * time.Microsecond)
+	}
 }
 
 // must be holding mutex when calling
@@ -173,7 +181,7 @@ func (c *mockClock) Advance(duration time.Duration) {
 
 		// Drop the mutex temporarily and notify
 		c.mutex.Unlock()
-		notifySleeper(head, c.now)
+		notifySleeper(head, c.now, c.opts.Yield)
 		c.mutex.Lock()
 
 		switch s := head.(type) {
