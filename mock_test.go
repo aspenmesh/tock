@@ -6,8 +6,10 @@ import (
 	"time"
 )
 
+var defaultOpts MockOptions = MockOptions{Yield: true}
+
 func TestNewTimer(t *testing.T) {
-	c := NewMock()
+	c := NewMock(defaultOpts)
 
 	for _, d := range []time.Duration{
 		5 * time.Second,
@@ -39,7 +41,7 @@ func TestNewTimer(t *testing.T) {
 }
 
 func TestAdvance(t *testing.T) {
-	c := NewMock()
+	c := NewMock(defaultOpts)
 
 	var firedMutex sync.Mutex
 	fired := []int{}
@@ -102,7 +104,7 @@ func TestAdvance(t *testing.T) {
 }
 
 func TestBlockUntil(t *testing.T) {
-	c := NewMock()
+	c := NewMock(defaultOpts)
 
 	c.BlockUntil(0)
 	t1 := c.NewTimer(3 * time.Second)
@@ -123,7 +125,7 @@ func TestBlockUntil(t *testing.T) {
 }
 
 func TestAfter(t *testing.T) {
-	c := NewMock()
+	c := NewMock(defaultOpts)
 
 	var wg sync.WaitGroup
 	wg.Add(1)
@@ -139,7 +141,7 @@ func TestAfter(t *testing.T) {
 }
 
 func TestSleep(t *testing.T) {
-	c := NewMock()
+	c := NewMock(defaultOpts)
 
 	var wg sync.WaitGroup
 	wg.Add(1)
@@ -156,7 +158,7 @@ func TestSleep(t *testing.T) {
 }
 
 func TestSince(t *testing.T) {
-	c := NewMock()
+	c := NewMock(defaultOpts)
 	d := time.Date(1, time.January, 1, 0, 0, 5, 0, time.UTC)
 	s := c.Since(d)
 	if s != -5*time.Second {
@@ -175,7 +177,7 @@ func TestSince(t *testing.T) {
 }
 
 func TestUntil(t *testing.T) {
-	c := NewMock()
+	c := NewMock(defaultOpts)
 	d := time.Date(1, time.January, 1, 0, 0, 5, 0, time.UTC)
 	u := c.Until(d)
 	if u != 5*time.Second {
