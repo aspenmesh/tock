@@ -34,11 +34,19 @@ func (c *realClock) Until(t time.Time) time.Duration {
 }
 
 func (c *realClock) NewTimer(duration time.Duration) *Timer {
-	return &Timer{real: time.NewTimer(duration)}
+	real := time.NewTimer(duration)
+	return &Timer{
+		C:    real.C,
+		real: real,
+	}
 }
 
 func (c *realClock) NewTicker(duration time.Duration) *Ticker {
-	return &Ticker{real: time.NewTicker(duration)}
+	real := time.NewTicker(duration)
+	return &Ticker{
+		C:    real.C,
+		real: real,
+	}
 }
 
 func (t *Timer) Reset(d time.Duration) bool {
