@@ -63,9 +63,15 @@ func sleeperWhen(sleeper interface{}) time.Time {
 func notifySleeper(sleeper interface{}, now time.Time, yield bool) {
 	switch s := sleeper.(type) {
 	case *Timer:
-		s.outC <- now
+		select {
+		case s.outC <- now:
+		case <-s.stopC:
+		}
 	case *Ticker:
-		s.outC <- now
+		select {
+		case s.outC <- now:
+		case <-s.stopC:
+		}
 	}
 
 	// Give timers an opportunity to run - helpful if we're in the middle of a
@@ -122,10 +128,11 @@ func (c *mockClock) NewTimer(duration time.Duration) *Timer {
 
 	outC := make(chan time.Time)
 	t := &Timer{
-		C:    outC, // user sees receive-channel
-		outC: outC, // we use it as a send-channel
-		mock: c,
-		when: c.now.Add(duration),
+		C:     outC, // user sees receive-channel
+		outC:  outC, // we use it as a send-channel
+		mock:  c,
+		when:  c.now.Add(duration),
+		stopC: make(chan struct{}),
 	}
 	c.insertSleeper(t)
 
@@ -144,6 +151,7 @@ func (c *mockClock) NewTicker(duration time.Duration) *Ticker {
 		mock:   c,
 		when:   c.now.Add(duration),
 		period: duration,
+		stopC:  make(chan struct{}),
 	}
 	c.insertSleeper(t)
 
@@ -187,13 +195,19 @@ func (c *mockClock) Advance(duration time.Duration) {
 		switch s := head.(type) {
 		case *Ticker:
 			// Requeue ticker
-			if !s.stopped {
+			select {
+			case <-s.stopC:
+			default:
 				s.when = c.now.Add(s.period)
 				c.insertSleeper(s)
 			}
 		case *Timer:
 			// Discard timer, and notify that sleepers changed
-			s.stopped = true
+			select {
+			case <-s.stopC:
+			default:
+				close(s.stopC)
+			}
 			for _, sc := range c.sleepersChanged {
 				sc <- len(c.sleepers)
 			}
@@ -206,10 +220,13 @@ func stopMockTimer(t *Timer) bool {
 
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
-	if t.stopped {
-		return false
+
+	select {
+	case <-t.stopC:
+	default:
+		close(t.stopC)
 	}
-	t.stopped = true
+
 	return c.removeSleeper(t)
 }
 
@@ -218,10 +235,13 @@ func stopMockTicker(t *Ticker) {
 
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
-	if t.stopped {
-		return
+
+	select {
+	case <-t.stopC:
+	default:
+		close(t.stopC)
 	}
-	t.stopped = true
+
 	c.removeSleeper(t)
 }
 
