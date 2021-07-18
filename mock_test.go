@@ -194,3 +194,43 @@ func TestUntil(t *testing.T) {
 		t.Errorf("Expected -24 hours until from 24 hour time, got %v", u)
 	}
 }
+
+func TestStopTimerNoDeadlock(t *testing.T) {
+	// Hopefully, the execution order will be:
+	// t1 := c.NewTimer(time.Second)
+	// c.Advance(2 * time.Second)
+	// t1.Stop()
+	c := NewMock(defaultOpts)
+	barrier := make(chan struct{})
+	go func() {
+		t1 := c.NewTimer(time.Second)
+		barrier <- struct{}{}
+		<-barrier
+		t1.Stop()
+	}()
+	<-barrier
+	go func() {
+		barrier <- struct{}{}
+	}()
+	c.Advance(2 * time.Second)
+}
+
+func TestStopTickerNoDeadlock(t *testing.T) {
+	// Hopefully, the execution order will be:
+	// t1 := c.NewTicker(time.Second)
+	// c.Advance(2 * time.Second)
+	// t1.Stop()
+	c := NewMock(defaultOpts)
+	barrier := make(chan struct{})
+	go func() {
+		t1 := c.NewTicker(time.Second)
+		barrier <- struct{}{}
+		<-barrier
+		t1.Stop()
+	}()
+	<-barrier
+	go func() {
+		barrier <- struct{}{}
+	}()
+	c.Advance(2 * time.Second)
+}
